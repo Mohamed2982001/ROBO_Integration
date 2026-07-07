@@ -3,11 +3,10 @@
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 
-// ---------- Local Wi-Fi Network Credentials ----------
 // The ESP32 now JOINS your home/router Wi-Fi instead of hosting its own
 // access point. Set these to your actual network name and password.
 const char* WIFI_SSID     = "WE-5G";
-const char* WIFI_PASSWORD = "159@Mahmoud147";
+const char* WIFI_PASSWORD = "159@wifi147";
 
 WebServer server(80);
 
@@ -19,7 +18,7 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 #define USMAX  2400
 #define SERVO_FREQ 50
 
-// ---------- DC Motor Pins ----------
+// DC Motor Pins 
 #define FL_IN1 27
 #define FL_IN2 14
 #define FL_ENA 26
@@ -36,14 +35,11 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 #define RR_IN2 15
 #define RR_ENB 13
 
-// ---------- Speed Control ----------
+// Speed Control 
 // 0-255 PWM duty applied to all enable pins. Adjustable via /speed?value=
 int currentSpeed = 255;
 
-// ---------- Servo Constraint Configuration ----------
-// NUM_SERVOS = 8 original + 2 new ones (channels 8 and 9 on the PCA9685).
-// Rename/re-tune the new channels below to match whatever you actually
-// mount there (gripper, waist rotation, extra head axis, etc).
+// Servo Constraint Configuration
 #define NUM_SERVOS 10
 
 struct ServoConfig {
@@ -65,7 +61,7 @@ ServoConfig servoLimits[NUM_SERVOS] = {
   {70,    115,  90}   // Servo 9: gripper left
 };
 
-// ---------- Motor Control Logic ----------
+//  Motor Control Logic
 void enableAllMotors() {
   analogWrite(FL_ENA, currentSpeed);
   analogWrite(FR_ENB, currentSpeed);
@@ -131,7 +127,7 @@ void rotateRight() {
   digitalWrite(RR_IN1, LOW);  digitalWrite(RR_IN2, HIGH);
 }
 
-// ---------- Diagonal (true mecanum) moves ----------
+//  Diagonal (true mecanum) moves 
 // Only the two wheels on the active diagonal spin; the other two stay idle.
 void diagForwardRight() {
   enableAllMotors();
@@ -165,7 +161,7 @@ void diagBackwardLeft() {
   digitalWrite(RR_IN1, LOW);  digitalWrite(RR_IN2, HIGH);
 }
 
-// ---------- PCA9685 Servo Helper with Constraints ----------
+// PCA9685 Servo Helper with Constraints
 void moveServo(int channel, int angle) {
   if (channel < 0 || channel >= NUM_SERVOS) return;
   int constrainedAngle = constrain(angle, servoLimits[channel].minAngle, servoLimits[channel].maxAngle);
@@ -173,7 +169,7 @@ void moveServo(int channel, int angle) {
   pwm.writeMicroseconds(channel, pulseLen);
 }
 
-// ---------- HTML Webpage Interface ----------
+//HTML Webpage Interface 
 String page = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -239,7 +235,7 @@ String getSliderHtml(int num) {
   return html;
 }
 
-// ---------- Initialization and Setup ----------
+//  Initialization and Setup 
 void setup() {
   Serial.begin(115200);
 
@@ -259,7 +255,7 @@ void setup() {
     moveServo(i, servoLimits[i].startAngle);
   }
 
-  // ----- Connect to your local Wi-Fi network (router) -----
+  // Connect to your local Wi-Fi network (router) 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to Wi-Fi");
@@ -277,7 +273,7 @@ void setup() {
   }
   Serial.println("\nConnected!");
   Serial.print("Robot IP address: ");
-  Serial.println(WiFi.localIP());  // <-- use this IP in the Python Robot() client
+  Serial.println(WiFi.localIP());
 
   server.on("/", []() {
     String fullPage = page;
@@ -289,7 +285,7 @@ void setup() {
     server.send(200, "text/html", fullPage);
   });
 
-  // ----- Chassis routes -----
+  //Chassis routes
   server.on("/forward",     []() { forward();          server.sendHeader("Connection", "close"); server.send(200, "text/plain", "OK"); });
   server.on("/backward",    []() { backward();         server.sendHeader("Connection", "close"); server.send(200, "text/plain", "OK"); });
   server.on("/left",        []() { strafeLeft();       server.sendHeader("Connection", "close"); server.send(200, "text/plain", "OK"); });
