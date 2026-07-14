@@ -1,0 +1,50 @@
+# ==============================================================================
+# AI Robot System (Musa) — Dependencies
+# Configured for low-latency inference on Windows 11 with CUDA acceleration
+# ==============================================================================
+
+# Core utilities
+python-dotenv==1.2.2
+colorama==0.4.6
+numpy==2.2.6
+pydantic==2.12.4
+scipy==1.15.3
+
+# Large Language Model Cognitive Engine
+groq==0.37.1
+langchain==1.3.1
+langchain-core==1.4.0
+langchain-groq==1.1.2
+langchain-openai==1.2.1
+
+# Speech Processing and Audio I/O
+PyAudio==0.2.14
+faster-whisper==1.2.1
+kokoro==0.9.4
+sounddevice==0.5.3
+soundfile==0.13.1
+
+# Computer Vision & Real-time Tracking
+opencv-python==4.13.0.92
+ultralytics==8.4.51
+lapx>=0.5.2
+facenet-pytorch==2.5.3
+
+# Machine Learning & Deep Learning Frameworks
+torch==2.5.1
+torchvision==0.20.1
+torchaudio==2.5.1
+
+# Dual-Store Database Drivers
+pymongo==4.17.0
+qdrant-client==1.18.0
+
+# Vector Embeddings
+sentence-transformers==5.5.0
+speechbrain==1.1.0
+
+# Utilities and APIs
+ddgs==9.14.4
+easyocr==1.7.2
+fastapi==0.136.1
+uvicorn==0.47.0

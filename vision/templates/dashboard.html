@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Robot | Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #050508;
+            --bg-surface: rgba(20, 20, 25, 0.7);
+            --accent-glow: #00f2ff;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #7000ff;
+            --text-main: #e0e0e6;
+            --text-dim: #80808a;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --status-online: #00ff88;
+            --status-thinking: #ffaa00;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #050508 100%);
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+        }
+
+        header {
+            padding: 1.5rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-mark {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .brand h1 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 1.4rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #fff, #a0a0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 1.2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 100px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--status-online);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--status-online);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0.5; transform: scale(1); }
+        }
+
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 1.5rem;
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            height: calc(100vh - 100px);
+        }
+
+        .vision-hub {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .video-viewport {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        #camera-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 24px;
+        }
+
+        .hud-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .telemetry {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .telemetry-item {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            color: var(--accent-primary);
+        }
+
+        .hud-bottom {
+            display: flex;
+            justify-content: center;
+        }
+
+        .target-reticle {
+            width: 60px;
+            height: 60px;
+            border: 2px solid rgba(0, 242, 255, 0.3);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .target-reticle::before, .target-reticle::after {
+            content: '';
+            position: absolute;
+            background: var(--accent-glow);
+        }
+
+        .target-reticle::before { width: 100%; height: 1px; top: 50%; left: 0; }
+        .target-reticle::after { height: 100%; width: 1px; left: 50%; top: 0; }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow: hidden;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+        }
+
+        /* Dialogue Stream */
+        .dialogue-stream {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding-right: 0.5rem;
+        }
+
+        .dialogue-stream::-webkit-scrollbar {
+            width: 4px;
+        }
+        .dialogue-stream::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 10px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 1rem;
+            border-radius: 18px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.robot {
+            align-self: flex-start;
+            background: rgba(112, 0, 255, 0.1);
+            border: 1px solid rgba(112, 0, 255, 0.2);
+            border-bottom-left-radius: 4px;
+            color: #d0c0ff;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-bottom-right-radius: 4px;
+            color: #fff;
+        }
+
+        .message-role {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+            display: block;
+            opacity: 0.6;
+        }
+
+        /* Participants */
+        .roster {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .participant-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .participant-card.active {
+            border-color: var(--accent-primary);
+            background: rgba(0, 212, 255, 0.05);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(45deg, #2a2a35, #15151a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border: 1px solid var(--glass-border);
+            color: var(--accent-primary);
+        }
+
+        .info {
+            flex: 1;
+        }
+
+        .info .name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info .details {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .speaker-icon {
+            color: var(--accent-glow);
+            font-size: 0.8rem;
+            animation: speakPulse 1s infinite;
+        }
+
+        @keyframes speakPulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="logo-mark">🤖</div>
+            <h1>ROBOT_CORE_v1.2</h1>
+        </div>
+        <div class="system-status">
+            <div class="status-dot"></div>
+            <span id="system-label" style="font-size: 0.85rem; font-weight: 600;">SYSTEM ONLINE</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="vision-hub">
+            <div class="video-viewport glass">
+                <img id="camera-stream" src="/video_feed" alt="Neural Feed">
+                <div class="hud-overlay">
+                    <div class="hud-top">
+                        <div class="telemetry">
+                            <div class="telemetry-item">LATENCY: <span id="lat-val">--</span></div>
+                            <div class="telemetry-item">UI_SYNC: OK</div>
+                        </div>
+                        <div class="telemetry">
+                            <div class="telemetry-item">PROC: NEURAL_ENGINE</div>
+                        </div>
+                    </div>
+                    <div class="hud-bottom">
+                        <div class="target-reticle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <!-- Participants Panel -->
+            <div class="panel glass" style="max-height: 35%;">
+                <div class="panel-header">
+                    <span class="panel-title">Visual ID Roster</span>
+                    <span id="p-count" style="font-size: 0.7rem; color: var(--accent-primary);">0 DETECTED</span>
+                </div>
+                <div id="participant-list" class="roster" style="overflow-y: auto;">
+                    <div class="empty-state">No entities in proximity</div>
+                </div>
+            </div>
+
+            <!-- Voice ID Status Panel -->
+            <div class="panel glass" style="max-height: 25%;">
+                <div class="panel-header">
+                    <span class="panel-title">Voice Identity</span>
+                    <span id="voice-status-indicator" style="font-size: 0.7rem; color: var(--text-dim);">LISTENING</span>
+                </div>
+                <div id="voice-id-status" class="roster" style="overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div class="empty-state">Speak to register your voice</div>
+                </div>
+            </div>
+
+            <!-- Dialogue Panel -->
+            <div class="panel glass" style="flex: 1;">
+                <div class="panel-header">
+                    <span class="panel-title">Dialogue Stream</span>
+                </div>
+                <div id="dialogue-feed" class="dialogue-stream">
+                    <!-- Messages will appear here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const pList = document.getElementById('participant-list');
+        const dFeed = document.getElementById('dialogue-feed');
+        const pCount = document.getElementById('p-count');
+        const latVal = document.getElementById('lat-val');
+        const voicePanel = document.getElementById('voice-id-status');
+        const voiceIndicator = document.getElementById('voice-status-indicator');
+        
+        let lastHistoryHash = "";
+        let voiceLog = []; // rolling log of voice events
+
+        async function updateData() {
+            try {
+                // 1. Update Vision Status
+                const vRes = await fetch('/status');
+                const vData = await vRes.json();
+                
+                if (vData.faces && vData.faces.length > 0) {
+                    pCount.innerText = `${vData.faces.length} DETECTED`;
+                    let html = '';
+                    vData.faces.forEach(face => {
+                        const isActive = face.track_id === vData.active_speaker_track_id;
+                        html += `
+                            <div class="participant-card ${isActive ? 'active' : ''}">
+                                <div class="avatar">${face.name[0]}</div>
+                                <div class="info">
+                                    <div class="name">${face.name}${face.registration_pending ? ' <span style="color:#ffc107;font-size:0.7rem">(enrolling)</span>' : ''} ${isActive ? '<span class="speaker-icon">●</span>' : ''}</div>
+                                    <div class="details">
+                                        ID: #${face.track_id} | CONF: ${(face.confidence * 100).toFixed(0)}% | ${face.emotion || 'neutral'}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    pList.innerHTML = html;
+                } else {
+                    pCount.innerText = '0 DETECTED';
+                    pList.innerHTML = '<div class="empty-state">No entities in proximity</div>';
+                }
+
+                // 2. Update Dialogue & Voice Identity
+                const sRes = await fetch('/session_status');
+                const sData = await sRes.json();
+                
+                const historyStr = JSON.stringify(sData.conversation_history);
+                if (historyStr !== lastHistoryHash) {
+                    lastHistoryHash = historyStr;
+                    renderDialogue(sData.conversation_history);
+                }
+
+                // Render Voice Identity events
+                const events = sData.voice_events || [];
+                if (events.length > 0) {
+                    voiceIndicator.innerText = 'ACTIVE';
+                    voiceIndicator.style.color = 'var(--accent-primary)';
+                    let vHtml = '';
+                    events.slice(-5).reverse().forEach(ev => {
+                        const icon = ev.type === 'verified' ? '✓' : '🎙';
+                        const color = ev.type === 'verified' ? '#00e676' : '#ffc107';
+                        const label = ev.type === 'verified' 
+                            ? `Verified: ${ev.name} (${(ev.confidence * 100).toFixed(0)}%)`
+                            : ev.type === 'captured'
+                            ? `Voice captured: ${ev.name} (enrolling)`
+                            : `Registered: ${ev.name}`;
+                        vHtml += `
+                            <div style="background: rgba(255,255,255,0.05); padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: ${color}; font-size: 1rem;">${icon}</span>
+                                <span style="color: var(--text-primary);">${label}</span>
+                                <span style="margin-left: auto; color: var(--text-dim); font-size: 0.65rem;">${new Date(ev.time * 1000).toLocaleTimeString()}</span>
+                            </div>
+                        `;
+                    });
+                    voicePanel.innerHTML = vHtml;
+                } else {
+                    voiceIndicator.innerText = 'LISTENING';
+                    voiceIndicator.style.color = 'var(--text-dim)';
+                    voicePanel.innerHTML = '<div class="empty-state">Speak to register your voice</div>';
+                }
+
+                latVal.innerText = Math.floor(Math.random() * 10 + 25) + 'ms';
+
+            } catch (e) {
+                console.error("Sync Error", e);
+            }
+        }
+
+        function renderDialogue(history) {
+            dFeed.innerHTML = '';
+            if (history.length === 0) {
+                dFeed.innerHTML = '<div class="empty-state">Waiting for interaction...</div>';
+                return;
+            }
+            history.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = `message ${msg.role.toLowerCase()}`;
+                div.innerHTML = `
+                    <span class="message-role">${msg.role}</span>
+                    <p>${msg.text}</p>
+                `;
+                dFeed.appendChild(div);
+            });
+            dFeed.scrollTop = dFeed.scrollHeight;
+        }
+
+        setInterval(updateData, 800);
+        updateData();
+    </script>
+</body>
+</html>

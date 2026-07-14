@@ -1,0 +1,24 @@
+=== Starting AI Robot System ===
+[MongoDB] Connected → mongodb://localhost:27017 / robot_memory
+[Qdrant] Collection 'identity_embeddings' already exists
+[Qdrant] Collection 'ltm_memories' already exists
+[Qdrant] Connected → http://localhost:6333
+[TTS] Loading Kokoro voice engine...
+WARNING: Defaulting repo_id to hexgrad/Kokoro-82M. Pass repo_id='hexgrad/Kokoro-82M' to suppress this warning.
+[TTS] Kokoro ready ✓
+[OCR] Loading EasyOCR model... (gpu=False)
+[FaceRecognizer] Using device: cpu
+[FaceRecognizer] Ready ✓
+[ObjectRecognizer] Ready ✓
+[LTM] Loading embedding model: BAAI/bge-small-en-v1.5 on cpu
+[Brain] Initialized with LangChain (openai/gpt-oss-20b)
+[STT] Loading faster-whisper (small)...
+[STT] Whisper ready on cpu (int8) ✓
+[FaceRecognizer] Local cache loaded: 7 user(s)
+[VisionPipeline] Started ✓
+[STT] Waiting for speech...[STT] Always-on listening started ✓
+
+=== System Ready ===
+[VisionPipeline] Camera opened ✓
+[STT] 🔄 Stitching chunk (30.1s)
+[STT] 🔄 Stitching chunk (30.1s)
