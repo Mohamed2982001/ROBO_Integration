@@ -1,144 +1,161 @@
-# How to Run: Integrated AI Robot System (Musa)
+# 📖 دليل التشغيل الشامل: نظام الروبوت المتكامل (Musa)
 
-This guide provides a detailed, step-by-step procedure to set up, configure, run, and test the integrated AI Brain and ESP32 Mecanum Chassis project.
-
----
-
-## 📋 Prerequisites
-
-Before starting, ensure you have the following installed on your system:
-1. **Python**: Python 3.11 or 3.12 (64-bit).
-2. **MongoDB**: Local Community Server running on `mongodb://localhost:27017` (Default port).
-3. **Hardware (for full setup)**: USB webcam, microphone, and the ESP32 Mecanum Chassis robot.
-4. **NVIDIA GPU (Recommended)**: For low-latency voice, vision, and speech processing.
+هذا الدليل يشرح بالتفصيل الممل خطوات تشغيل نظام الروبوت الذكي (موسى) في بيئة الدمج الثلاثي: **تطبيق الموبايل ↔ سيرفر الذكاء الاصطناعي ↔ جسم الروبوت الحقيقي (ESP32)**.
 
 ---
 
-## 🛠️ Step 1: Environment Setup
+## 📋 المتطلبات الأساسية (Prerequisites)
 
-1. **Open a Terminal** (e.g., PowerShell) in the root of the project directory `d:\Work\Dev\Grad Proj\Integration`.
-2. **Create a Virtual Environment**:
-   ```powershell
-   python -m venv .venv
-   ```
-3. **Activate the Virtual Environment**:
-   * **PowerShell**:
-     ```powershell
-     .\.venv\Scripts\Activate.ps1
-     ```
-   * **Command Prompt (CMD)**:
-     ```cmd
-     .\.venv\Scripts\activate.bat
-     ```
-4. **Install Dependencies**:
-   ```powershell
-   pip install -r requirements.txt
-   pip install mediapipe opencv-python requests
-   ```
+قبل البدء، تأكد من توفر ما يلي:
+1. **جهاز الكمبيوتر / اللابتوب (الباك-اند):**
+   - نظام تشغيل Windows (موصى به).
+   - تثبيت **Python 3.11** أو **3.12**.
+   - تثبيت وقابلية تشغيل **MongoDB** محلياً على المنفذ الافتراضي (`mongodb://localhost:27017`).
+2. **الموبايل (الـ App):**
+   - هاتف Android متصل بنفس شبكة الواي فاي للكمبيوتر.
+   - ملف الـ APK الجاهز للبرنامج (مرفوع على جوجل درايف أو موجود في مجلد التطبيق المترجم).
+3. **جسم الروبوت (الـ Hardware):**
+   - لوحة ESP32 موصل بها الـ Mecanum Wheels والسيرفو والواي فاي.
+   - إذا لم يكن الجسم متوفراً، يمكنك تشغيل **المحاكي (Mock Simulator)**.
 
 ---
 
-## ⚙️ Step 2: Configuration
+## ⚙️ الخطوة 1: إعداد ملف الإعدادات (.env)
 
-1. **Create the Environment File**:
-   Copy `.env.example` to a new file named `.env`:
-   ```powershell
-   copy .env.example .env
-   ```
-2. **Configure Robot IP Address**:
-   Open the `.env` file and configure `ROBOT_IP` to match the IP address of your ESP32 robot:
+افتح مجلد `Integration` (أو `backend_server`):
+1. قم بإنشاء ملف `.env` واملأه بالمتغيرات التالية:
    ```env
+   # عنوان IP الخاص بالروبوت (مطبوع في شاشة الـ Serial بعد تشغيل الـ ESP32)
    ROBOT_IP=192.168.1.18
-   GROQ_API_KEY=your_groq_api_key_here
+   
+   # مفاتيح Groq الخاصة بك للتعرف على الكلام والذكاء الاصطناعي (يمكن وضع مفتاح أو أكثر مفصولة بفواصل)
+   GROQ_API_KEY=gsk_xxxxxx,gsk_yyyyyy
    ```
-   *If testing offline without physical hardware, set `ROBOT_IP=127.0.0.1`.*
+   > [!NOTE]
+   > إذا كنت تعمل بدون جسم الروبوت الحقيقي، اضبط العنوان ليكون عنوان جهازك المحلي `ROBOT_IP=127.0.0.1`.
 
 ---
 
-## 💻 Step 3: Offline Hardware Testing (Mock Simulator)
+## 💻 الخطوة 2: تشغيل المحاكي (إذا لم يكن الروبوت متوفراً)
 
-If you do not have the physical robot body, you can simulate all motor and servo movements locally:
-
-1. **Start the Mock Simulator** in a separate terminal:
+إذا كنت تقوم بالتجربة بدون الهاردوير:
+1. افتح ترمينال جديد في مجلد `Integration`.
+2. قم بتشغيل المحاكي:
    ```powershell
    python scratch/mock_robot_server.py
    ```
-   *This starts a mock server on port `8080` (or `80` if run as admin). If using port 8080, make sure to adjust `ROBOT_IP` or port settings accordingly.*
-2. **Set `.env`**: Ensure `ROBOT_IP` is set to `127.0.0.1` (localhost).
-3. **Test the Integration**: Start the main system (Step 4). When the robot thinks, speaks, or runs movement tools, you will see all low-level HTTP requests printed in color inside the mock server terminal:
-   * `[MOCK ESP32] CHASSIS MOTION: FORWARD`
-   * `[MOCK ESP32] SERVO MOVE: Channel 7 -> 95°`
-   * `[MOCK ESP32] MULTI-SERVO POSE: {1:125°, 2:80°}`
-
----
-
-## 🚀 Step 4: Running the Main System
-
-1. Make sure your **MongoDB service** is running in the background.
-2. Run the startup script. This will automatically launch the local vector database (`qdrant.exe`) and start the robot's main orchestrator:
-   ```powershell
-   .\run.bat
+3. **النتيجة المتوقعة (Expected Output):**
+   يجب أن يظهر في الترمينال:
+   ```text
+   [MOCK ESP32] Running server on http://127.0.0.1:80
+   [MOCK ESP32] Ready to receive chassis and servo commands...
    ```
-   *If you encounter execution policy restrictions, run this command instead:*
+   *(دع هذا الترمينال مفتوحاً في الخلفية لتشاهد الأوامر التي يرسلها الذكاء الاصطناعي).*
+
+---
+
+## 🚀 الخطوة 3: تشغيل سيرفر الباك-اند (FastAPI Server)
+
+1. افتح ترمينال جديد في مجلد `Integration\backend_server`.
+2. قم بتفعيل البيئة الافتراضية وتثبيت المكتبات (في حال لم تقم بذلك مسبقاً):
    ```powershell
-   powershell -ExecutionPolicy Bypass -File .\scripts\run_robot.ps1
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
    ```
-
----
-
-## 👤 Step 5: User Registration & Face Tracking
-
-1. **Camera Sharing**: The main webcam is managed exclusively by the `VisionPipeline`. MediaPipe face tracking runs inside it at 30 fps to control the neck servos without locking conflicts.
-2. **Tracking Test**: Move in front of the camera. The neck pan/tilt servos (Channels 0 and 7) will move to track your face center.
-3. **Registration Flow**:
-   * Stand in front of the camera. Musa will ask for your name and age.
-   * Musa will record a voice print.
-   * Once confirmed, your profile is saved, and subsequent logins by face/voice are instant.
-
----
-
-## 🤖 Step 6: Gesture & Action Commands
-
-You can speak to the robot using natural language:
-* **Greetings**: "Hi Musa, hello!" -> Triggers arm waving gesture.
-* **Questions**: "How do you work?" -> Triggers head tilting.
-* **Control Commands**:
-  * *"Move forward for 2 seconds and open your right gripper claw."*
-  * *"Look up and raise your arms."*
-  * Musa will call the registered tools (`move_robot`, `set_robot_pose`, `control_gripper`), executing the low-level HTTP queries to the ESP32.
-
----
-
-## 📱 Step 7: 3-Way Mobile App & Server Integration
-
-If you want to use the **Mobile App (MUSA)** as the camera and microphone for the robot (replacing PC webcam/mic):
-
-### 1. Requirements:
-- **WiFi**: Ensure your ESP32 Robot, the Backend PC/Laptop, and your Mobile Phone are all connected to the **same Wi-Fi network**.
-
-### 2. Running the Backend Server:
-1. Open a new terminal in `d:\Work\Dev\Grad Proj\Integration\backend_server`.
-2. Run the WebSocket companion server:
+3. ابدأ تشغيل السيرفر على الشبكة المحلية:
    ```powershell
    uvicorn main:app --host 0.0.0.0 --port 8000
    ```
-   *(It will automatically connect to your ESP32 robot over Wi-Fi and load the AI engine).*
-
-### 3. Running the Mobile App:
-1. Open the MUSA Flutter application on your phone.
-2. In the IP connection screen, input your **Backend PC's local IP address** (e.g. `192.168.1.100`) and port `8000`.
-3. Press **Connect**.
-4. Once connected:
-   - Tap the **Camera** icon to start streaming video frames (enables YOLO face-recognition and automatic head-tracking).
-   - Tap the **Microphone** icon to speak (sends PCM16 audio chunks to the server for Groq transcription and brain processing).
-   - Tap the **Robot icon (Toy)** in the AppBar to open the **Direct Control Sheet**. From there, you can manually trigger robot poses (Wave, Home) or drive the Mecanum chassis directly using the D-Pad buttons.
+4. **النتيجة المتوقعة (Expected Output):**
+   * سيبدأ السيرفر في محاولة الاتصال بالـ IP الخاص بالروبوت.
+   * سيقوم بتحميل مكتبة **Kokoro** لتوليد الصوت ومكتبة **MediaPipe** للتعرف على الوجه.
+   * ستظهر السطور التالية في الكونسول:
+     ```text
+     [Main] Connecting to robot at 192.168.1.18...
+     [Main] Connected to robot at 192.168.1.18 ✓
+     [Main] Loading Kokoro on cuda/cpu for server-side audio...
+     [Main] Kokoro loaded successfully for server-side audio ✓
+     [Main] MediaPipe FaceTracker initialized successfully ✓
+     INFO:     Uvicorn server running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+     ```
+   *(السيرفر الآن جاهز تماماً لاستقبال اتصالات الموبايل وبث الكاميرا والصوت).*
 
 ---
 
-## 🛡️ Arabic Numbers & RTL Localization Heuristics
+## 📱 الخطوة 4: تثبيت وتشغيل التطبيق (MUSA App)
 
-Per graduation project requirements:
-1. All displayed numbers in Arabic text fields should use Eastern Arabic numerals (like ٠, ١, ٢, ٣).
-2. The Tajawal font is set as the default across the application screens.
-3. Logical RTL layouts are enforced.
+### أ. التثبيت السريع عبر الـ APK:
+إذا كنت لا تملك بيئة عمل فلاتر على جهازك أو تريد التثبيت الفوري على الهاتف:
+1. قم بنسخ ملف **`app-release.apk`** الموجود في مجلد `MUSA/build/app/outputs/flutter-apk/app-release.apk` إلى هاتفك الاندرويد.
+2. قم بتثبيته وتأكيد إعطاء صلاحيات الكاميرا والمايكروفون للتطبيق.
 
+### ب. التشغيل عبر Flutter SDK:
+إذا كنت مطوراً وتريد تشغيله من الكود:
+1. افتح مجلد `MUSA` في VS Code أو Android Studio.
+2. قم بتوصيل هاتفك بالكمبيوتر وتفعيل USB Debugging.
+3. قم بتشغيل الأمر:
+   ```powershell
+   flutter run
+   ```
+
+### ج. خطوات الاتصال داخل التطبيق:
+1. تأكد أن الموبايل متصل بـ **نفس شبكة الواي فاي** المتصل بها اللابتوب.
+2. افتح التطبيق، ستظهر لك شاشة الاتصال بالسيرفر.
+3. اكتب **عنوان IP المحلي الخاص بالكمبيوتر** (وليس الـ localhost، ابحث عن IPv4 في جهازك باستخدام أمر `ipconfig` في الـ CMD، مثلاً: `192.168.1.100`) والمنفذ `8000`.
+4. اضغط **اتصال (Connect)**.
+5. **النتيجة المتوقعة (Expected Output):**
+   * يتحول المؤشر الدائري في التطبيق للون الأخضر ويكتب "متصل".
+   * يطبع سيرفر الباك-اند في كونسول uvicorn:
+     ```text
+     [WebSocket] Client connected
+     [Session] Started for client 12345 on android
+     ```
+
+---
+
+## 🎥 الخطوة 5: تشغيل وتجربة الميزات (المتوقع والتحقق)
+
+بعد إتمام الاتصال بنجاح، إليك كيفية تجربة كافة الخصائص خطوة بخطوة والتأكد من نجاحها:
+
+### 1️⃣ تفعيل وضع رأس الروبوت والتتبع (Robot Head Mode)
+* **الفعل:** اضغط على زر الشاشة الكاملة (Fullscreen Icon) في شريط العنوان العلوي (AppBar).
+* **المتوقع:**
+  1. ستدور شاشة الموبايل تلقائياً للوضع العرضي (`Landscape`).
+  2. يختفي الشات ويظهر وجه الروبوت كبير الحجم في المنتصف.
+  3. يظهر مربع عائم صغير في أعلى اليمين يعرض ما تشاهده الكاميرا الأمامية للموبايل.
+  4. **على شاشة الكمبيوتر (سيرفر الباك-اند):** ستفتح تلقائياً نافذة باسم `MUSA Live Robot Vision` تعرض البث المباشر المأخوذ من الموبايل محدد عليه مستطيلات خضراء حول وجوه الأشخاص مع كتابة أسمائهم، بالإضافة لتحديد مركز التتبع ودائرة المدى المسموح به (`deadzone`).
+  5. **جسم الروبوت الحقيقي:** بمجرد تحريك الموبايل يميناً أو يساراً لتبتعد عن منتصف الكاميرا، ستتحرك رقبة الروبوت (محركات السيرفو 0 و 7) فوراً لتتبع وجهك تلقائياً وبسلاسة بالغة.
+
+### 2️⃣ التحدث الصوتي الذكي (Voice Dialogue & Gestures)
+* **الفعل:** اضغط على زر الميكروفون العائم أسفل يسار الموبايل وابدأ بالتحدث, قل مثلاً: *"أهلاً يا موسى"* أو *"كيف تعمل؟"* ثم اترك الزر.
+* **المتوقع:**
+  1. كونسول الباك-اند يطبع جاري الترجمة وتظهر الكتابة في ثانية واحدة.
+  2. يقوم العقل الاصطناعي بمعالجة السؤال وتوليد رد صوتي طبيعي جداً عالي الجودة (عبر Kokoro).
+  3. يرسل السيرفر كود الصوت والرد للتطبيق ليقوم الموبايل بنطق الرد وتحريك الفم والعينين بالتزامن مع النطق.
+  4. **حركات الجسد (Gestures):** في نفس اللحظة، يتحرك جسم الروبوت الحقيقي بشكل متناسق مع الكلام:
+     - عند قول الترحيب: يلوح الروبوت بذراعه ماداً يده للسلام.
+     - عند السؤال: يميل الرأس جانباً للتعبير عن التفكير.
+
+### 3️⃣ التحكم اليدوي المباشر (Manual D-pad & Poses)
+* **الفعل:** اضغط على أيقونة الروبوت في الجانب الأيسر لفتح لوحة التحكم اليدوية.
+* **المتوقع:**
+  1. تظهر لوحة سفلية أنيقة باللغة العربية تحتوي على أزرار التوجيه وأزرار الوضعيات.
+  2. عند الضغط على زر **أيدي لأعلى (Arms Up)** ➡️ يتحرك ذراعي الروبوت لأعلى فوراً.
+  3. عند الضغط على زر السهم للأمام ➡️ تدور عجلات الروبوت للأمام لتتحرك المنصة لمدة ثانية واحدة.
+  4. إذا كنت تستخدم المحاكي، ستشاهد السطور التالية تطبع فوراً في ترمينال المحاكي:
+     ```text
+     [MOCK ESP32] CHASSIS MOTION: FORWARD
+     [MOCK ESP32] MULTI-SERVO POSE: arms_up
+     ```
+
+---
+
+## 🛠️ إصلاح المشاكل الشائعة (Troubleshooting)
+
+* **المشكلة:** كونسول الباك-اند يكتب `Robot unreachable`.
+  * **الحل:** تأكد أن الـ IP المكتوب في `.env` متطابق تماماً مع الـ IP الحالي للروبوت، وتأكد أن الكمبيوتر والروبوت على نفس الواي فاي (أو شغل المحاكي ليعمل محلياً).
+* **المشكلة:** الموبايل لا يتصل بالسيرفر ويدور المؤشر طويلاً.
+  * **الحل:** تأكد أنك كتبت الـ IP الخاص بالكمبيوتر في شاشة الاتصال وليس `localhost` أو `127.0.0.1` (لأن الهاتف لا يستطيع الوصول للكمبيوتر عبر localhost). تأكد أيضاً من إيقاف جدار الحماية (Windows Firewall) للكمبيوتر أو السماح للمنفذ `8000` بالعبور.
+* **المشكلة:** النافذة الخاصة بالفيديو لا تظهر على الكمبيوتر.
+  * **الحل:** تأكد من إعطاء إذن الكاميرا للتطبيق والضغط على أيقونة الكاميرا في شاشة الموبايل لبدء البث المباشر.
