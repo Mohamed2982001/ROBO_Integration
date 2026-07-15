@@ -106,3 +106,39 @@ You can speak to the robot using natural language:
   * *"Move forward for 2 seconds and open your right gripper claw."*
   * *"Look up and raise your arms."*
   * Musa will call the registered tools (`move_robot`, `set_robot_pose`, `control_gripper`), executing the low-level HTTP queries to the ESP32.
+
+---
+
+## 📱 Step 7: 3-Way Mobile App & Server Integration
+
+If you want to use the **Mobile App (MUSA)** as the camera and microphone for the robot (replacing PC webcam/mic):
+
+### 1. Requirements:
+- **WiFi**: Ensure your ESP32 Robot, the Backend PC/Laptop, and your Mobile Phone are all connected to the **same Wi-Fi network**.
+
+### 2. Running the Backend Server:
+1. Open a new terminal in `d:\Work\Dev\Grad Proj\Integration\backend_server`.
+2. Run the WebSocket companion server:
+   ```powershell
+   uvicorn main:app --host 0.0.0.0 --port 8000
+   ```
+   *(It will automatically connect to your ESP32 robot over Wi-Fi and load the AI engine).*
+
+### 3. Running the Mobile App:
+1. Open the MUSA Flutter application on your phone.
+2. In the IP connection screen, input your **Backend PC's local IP address** (e.g. `192.168.1.100`) and port `8000`.
+3. Press **Connect**.
+4. Once connected:
+   - Tap the **Camera** icon to start streaming video frames (enables YOLO face-recognition and automatic head-tracking).
+   - Tap the **Microphone** icon to speak (sends PCM16 audio chunks to the server for Groq transcription and brain processing).
+   - Tap the **Robot icon (Toy)** in the AppBar to open the **Direct Control Sheet**. From there, you can manually trigger robot poses (Wave, Home) or drive the Mecanum chassis directly using the D-Pad buttons.
+
+---
+
+## 🛡️ Arabic Numbers & RTL Localization Heuristics
+
+Per graduation project requirements:
+1. All displayed numbers in Arabic text fields should use Eastern Arabic numerals (like ٠, ١, ٢, ٣).
+2. The Tajawal font is set as the default across the application screens.
+3. Logical RTL layouts are enforced.
+
