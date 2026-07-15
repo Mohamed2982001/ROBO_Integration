@@ -146,23 +146,33 @@ async def run_face_recognition(payload_b64: str):
             if frame is None:
                 return [], []
                 
-            # Run YOLO face detection
-            detected = ai_adapter.face_recognizer.detect(frame)
-            
-            # Closed-loop head tracking from camera feed
-            if detected:
+            # Resize frame to match tracker resolution for consistency
+            if face_tracker is not None:
+                frame = cv2.resize(frame, (face_tracker.cfg.frame_width, face_tracker.cfg.frame_height))
+                
+            # 1. Closed-loop head tracking from camera feed (uses MediaPipe FaceTracker)
+            detection = None
+            if face_tracker is not None:
                 try:
-                    box = detected[0]["box"]
-                    h, w = frame.shape[:2]
-                    center_x = w // 2
-                    center_y = h // 2
-                    target_x = (box[0] + box[2]) // 2
-                    target_y = (box[1] + box[3]) // 2
-                    
-                    update_robot_face_tracking(target_x - center_x, target_y - center_y)
+                    detection = face_tracker._detect_face_center(frame)
+                    if detection is not None:
+                        target_x, target_y, (x_min, y_min, width, height) = detection
+                        center_x = face_tracker.cfg.frame_width // 2
+                        center_y = face_tracker.cfg.frame_height // 2
+                        error_x = target_x - center_x
+                        error_y = target_y - center_y
+                        
+                        # Update and send servo commands using the user's exact logic
+                        face_tracker._update_target_angles(error_x, error_y)
+                        
+                        # Run the actual network call in a daemon thread so it doesn't block
+                        import threading
+                        threading.Thread(target=face_tracker._maybe_send_servo_update, daemon=True).start()
                 except Exception as e:
-                    print(f"[Main] Face tracking calculation error: {e}")
-            
+                    print(f"[Main] MediaPipe face tracking error: {e}")
+                    
+            # 2. Run YOLO face detection
+            detected = ai_adapter.face_recognizer.detect(frame)
             faces_out = []
             
             for f in detected:
@@ -194,13 +204,43 @@ async def run_face_recognition(payload_b64: str):
                     finfo.shirt_color = shirt_color
                     faces_out.append(finfo)
             
-            # Run YOLO object detection
+            # 3. Run YOLO object detection
             objects_out = []
             if hasattr(ai_adapter, "object_recognizer") and ai_adapter.object_recognizer is not None:
                 try:
                     objects_out = ai_adapter.object_recognizer.detect(frame)
                 except Exception as e:
                     print(f"[Vision] Object detection error: {e}")
+
+            # 4. Render who it sees on the PC monitor screen
+            try:
+                # 4.1 Draw MediaPipe tracking visual aids
+                if face_tracker is not None:
+                    cx = face_tracker.cfg.frame_width // 2
+                    cy = face_tracker.cfg.frame_height // 2
+                    # Draw deadzone radius circle
+                    cv2.circle(frame, (cx, cy), face_tracker.cfg.deadzone_radius, (255, 255, 255), 1)
+                    if detection is not None:
+                        tx, ty, _ = detection
+                        # Draw green target dot and tracking line
+                        cv2.circle(frame, (tx, ty), 5, (0, 255, 0), -1)
+                        cv2.line(frame, (cx, cy), (tx, ty), (0, 255, 0), 1)
+
+                # 4.2 Draw YOLO identification bounding boxes & names
+                for f in faces_out:
+                    x1, y1, x2, y2 = f.box
+                    # Draw bounding box
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    # Draw name and confidence label
+                    label = f"{f.name} ({int(f.confidence * 100)}%)"
+                    cv2.putText(frame, label, (x1, y1 - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
+                
+                # Show the live annotated camera feed on the PC screen!
+                cv2.imshow("MUSA Live Robot Vision (PC Screen)", frame)
+                cv2.waitKey(1)
+            except Exception as e:
+                # Silently catch GUI errors if running headlessly or window was closed
+                pass
                     
             return faces_out, objects_out
 
@@ -280,64 +320,21 @@ try:
 except Exception as e:
     print(f"[Main] WARNING: Could not load real AI adapter ({e}). Server will run in Mock Mode.")
 
-# Robot head tracking state
-pan_angle = 90.0
-tilt_angle = 80.0
-last_face_track_time = 0.0
-
-def update_robot_face_tracking(error_x: float, error_y: float):
-    global pan_angle, tilt_angle, last_face_track_time
-    if bot is None:
-        return
-        
-    now = time.time()
-    # Rate limit servo updates to 8Hz (every 0.125s) to avoid HTTP request collision and servo chatter
-    if now - last_face_track_time < 0.12:
-        return
-        
-    # Deadzone (say 15 pixels out of 320 width)
-    if abs(error_x) < 15 and abs(error_y) < 15:
-        return
-        
-    # Gains: pixel error -> degrees step
-    pan_gain = 1 / 80.0
-    tilt_gain = 1 / 50.0
-    max_step_deg = 3.0
-    smoothing = 0.35
-    
-    # Calculate step
-    step_x = max(-max_step_deg, min(max_step_deg, error_x * pan_gain))
-    step_y = max(-max_step_deg, min(max_step_deg, error_y * tilt_gain))
-    
-    # We want to pan left when the face is to the left of the center (negative error_x).
-    # Since head horizontal is channel 0, pan range is 45 (left) to 135 (right).
-    # If the face is to the left (error_x < 0), we want to look left (pan decrease).
-    # So raw_pan = pan_angle + step_x (if step_x is negative, pan decreases).
-    raw_pan = pan_angle - step_x
-    raw_tilt = tilt_angle - step_y
-    
-    # Smoothing
-    pan_angle = smoothing * pan_angle + (1 - smoothing) * raw_pan
-    tilt_angle = smoothing * tilt_angle + (1 - smoothing) * raw_tilt
-    
-    # Clamp angles
-    pan_angle = max(45.0, min(135.0, pan_angle))
-    tilt_angle = max(70.0, min(110.0, tilt_angle))
-    
-    pan_i = int(round(pan_angle))
-    tilt_i = int(round(tilt_angle))
-    
-    try:
-        import threading
-        def _send_servo():
-            try:
-                bot.set_servos({0: pan_i, 7: tilt_i})
-            except Exception as e:
-                print(f"[FaceTracking] Servo write failed: {e}")
-        threading.Thread(target=_send_servo, daemon=True).start()
-        last_face_track_time = now
-    except Exception as e:
-        print(f"[FaceTracking] Servo update thread error: {e}")
+# Initialize FaceTracker with user-defined config (uses MediaPipe)
+face_tracker_config = None
+face_tracker = None
+try:
+    from face_tracker import FaceTracker, FaceTrackerConfig
+    face_tracker_config = FaceTrackerConfig(
+        frame_width=320,  # match phone streaming resolution
+        frame_height=240,
+        deadzone_radius=20,
+    )
+    # We pass None for camera_url since we stream base64 frames
+    face_tracker = FaceTracker(bot, camera_url=0, config=face_tracker_config, show_preview=False)
+    print("[Main] MediaPipe FaceTracker initialized successfully ✓")
+except Exception as e:
+    print(f"[Main] WARNING: Could not load MediaPipe FaceTracker ({e})")
 
 def trigger_hardware_gesture_for_response(text: str, motion_command: dict = None):
     if bot is None:
