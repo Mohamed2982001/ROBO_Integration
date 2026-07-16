@@ -310,6 +310,7 @@ try:
             print(f"[Main] Error initializing robot settings: {e}")
     else:
         print(f"[Main] WARNING: Robot unreachable at {robot_ip}. Running in mock/unconnected mode.")
+        bot = None
 except Exception as e:
     print(f"[Main] WARNING: Could not initialize robot client: {e}")
 
@@ -756,6 +757,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             "type": "error",
                             "message": f"Hardware direct command error: {str(e)}"
                         })
+                else:
+                    print(f"[Hardware] Robot client is unconnected. Action '{action}' simulated in mock mode.")
 
     except WebSocketDisconnect:
         print("[WebSocket] Client disconnected")

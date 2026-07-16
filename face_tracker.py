@@ -170,6 +170,13 @@ class FaceTracker:
         if not moved_enough:
             return
 
+        if self.robot is None:
+            # Mock mode: skip physical connection, just update tracking state
+            self._last_sent_pan = pan_i
+            self._last_sent_tilt = tilt_i
+            self._last_send_time = now
+            return
+
         try:
             self.robot.set_servos({
                 self.cfg.pan_channel: pan_i,
