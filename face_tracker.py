@@ -11,8 +11,6 @@ from typing import Optional, Tuple
 
 import cv2
 import mediapipe as mp
-import mediapipe.solutions.face_detection
-import mediapipe.solutions.drawing_utils
 
 from robot_client import Robot
 
