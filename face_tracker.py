@@ -11,6 +11,8 @@ from typing import Optional, Tuple
 
 import cv2
 import mediapipe as mp
+import mediapipe.solutions.face_detection
+import mediapipe.solutions.drawing_utils
 
 from robot_client import Robot
 
@@ -66,10 +68,25 @@ class FaceTracker:
         self.cfg = config or FaceTrackerConfig()
         self.show_preview = show_preview
 
-        self._face_detector = mp.solutions.face_detection.FaceDetection(
-            model_selection=self.cfg.model_selection,
-            min_detection_confidence=self.cfg.min_detection_confidence,
-        )
+        # Attempt to load MediaPipe
+        self.use_mediapipe = False
+        try:
+            import mediapipe as mp
+            import mediapipe.solutions.face_detection
+            self._face_detector = mp.solutions.face_detection.FaceDetection(
+                model_selection=self.cfg.model_selection,
+                min_detection_confidence=self.cfg.min_detection_confidence,
+            )
+            self.use_mediapipe = True
+            print("[FaceTracker] MediaPipe face detector loaded successfully ✓")
+        except Exception as e:
+            print(f"[FaceTracker] MediaPipe solutions not available: {e}. Falling back to OpenCV Haar Cascade...")
+            cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+            self._face_cascade = cv2.CascadeClassifier(cascade_path)
+            if self._face_cascade.empty():
+                print("[FaceTracker] ERROR: OpenCV Haar Cascade XML could not be loaded!")
+            else:
+                print("[FaceTracker] OpenCV Haar Cascade face detector loaded successfully ✓")
 
         # Start centered; will sync toward wherever the servos already are
         # if you set these from robot.get_servo_angle() before run().
@@ -82,20 +99,38 @@ class FaceTracker:
 
 
     def _detect_face_center(self, frame) -> Optional[Tuple[int, int, Tuple[int, int, int, int]]]:
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = self._face_detector.process(rgb)
-        if not results.detections:
-            return None
+        if self.use_mediapipe:
+            try:
+                import mediapipe as mp
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = self._face_detector.process(rgb)
+                if results.detections:
+                    bbox = results.detections[0].location_data.relative_bounding_box
+                    w, h = self.cfg.frame_width, self.cfg.frame_height
+                    x_min = int(bbox.xmin * w)
+                    y_min = int(bbox.ymin * h)
+                    width = int(bbox.width * w)
+                    height = int(bbox.height * h)
+                    target_x = x_min + width // 2
+                    target_y = y_min + height // 2
+                    return target_x, target_y, (x_min, y_min, width, height)
+            except Exception as e:
+                # If MediaPipe runtime error occurs, fall back to OpenCV cascade
+                pass
 
-        bbox = results.detections[0].location_data.relative_bounding_box
-        w, h = self.cfg.frame_width, self.cfg.frame_height
-        x_min = int(bbox.xmin * w)
-        y_min = int(bbox.ymin * h)
-        width = int(bbox.width * w)
-        height = int(bbox.height * h)
-        target_x = x_min + width // 2
-        target_y = y_min + height // 2
-        return target_x, target_y, (x_min, y_min, width, height)
+        # OpenCV Haar Cascade Fallback
+        try:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = self._face_cascade.detectMultiScale(gray, 1.1, 4)
+            if len(faces) == 0:
+                return None
+            x, y, w, h = faces[0]
+            target_x = x + w // 2
+            target_y = y + h // 2
+            return target_x, target_y, (x, y, w, h)
+        except Exception as e:
+            print(f"[FaceTracker] Face detection failed: {e}")
+            return None
 
     def _update_target_angles(self, error_x: float, error_y: float):
         cfg = self.cfg
