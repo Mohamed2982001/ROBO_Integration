@@ -537,9 +537,17 @@ async def process_accumulated_audio(websocket: WebSocket, pcm_bytes: bytes, came
                 "voice_payload_base64": voice_payload_b64
             })
         else:
-            # Fallback mock reply
-            await asyncio.sleep(1.0)
-            mock_text = f"I transcribed: '{user_text}', but my AI brain is in mock mode."
+            user_lower = user_text.lower().strip()
+            if any(w in user_lower for w in ["hello", "hi", "hey", "أهلاً", "مرحبا", "سلام"]):
+                mock_text = "Hello there! I am MUSA, your humanoid social robot assistant. Nice to meet you!"
+            elif any(w in user_lower for w in ["how are you", "how's it going", "كيف حالك", "شلونك"]):
+                mock_text = "I am doing great, thank you for asking! I am fully ready to interact and assist you."
+            elif any(w in user_lower for w in ["name", "اسمك", "مين أنت", "من أنت"]):
+                mock_text = "My name is MUSA. I am a social robot designed to communicate, track faces, and assist users."
+            elif any(w in user_lower for w in ["move", "wave", "dance", "تحرك", "لوح", "ارقص"]):
+                mock_text = "Sure! I am performing the requested movement command right now."
+            else:
+                mock_text = f"I heard you say: '{user_text}'. I am running in local offline demo mode right now, but I can still follow your face and chat!"
             def generate_mock_tts():
                 return text_to_speech_mp3_base64(mock_text)
             voice_payload_b64 = await loop.run_in_executor(None, generate_mock_tts)

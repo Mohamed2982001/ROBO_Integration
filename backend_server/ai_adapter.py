@@ -24,12 +24,17 @@ def is_port_open(port):
 def ensure_qdrant_running():
     if not is_port_open(6333):
         qdrant_path = os.path.join(robot_dir, "qdrant.exe")
+        if not os.path.exists(qdrant_path):
+            # Fallback to the main Robot folder
+            qdrant_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Robot", "qdrant.exe"))
+        
         if os.path.exists(qdrant_path):
             print(f"[AIAdapter] Starting Qdrant database in background: {qdrant_path}")
             try:
+                qdrant_dir = os.path.dirname(qdrant_path)
                 subprocess.Popen(
                     [qdrant_path],
-                    cwd=robot_dir,
+                    cwd=qdrant_dir,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
