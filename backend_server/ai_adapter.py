@@ -355,26 +355,22 @@ class AIAdapter:
                 has_voice_embedding=True,
             )
 
-            # If registration controller handles it deterministically and skips LLM
-            if reg_turn.skip_llm and reg_turn.speak_text:
-                if reg_turn.confirmed:
-                    try:
-                        self.face_recognizer.refresh_cache(self.db.qdrant, self.db.mongo)
-                        print(f"[AIAdapter] Refreshed face recognizer cache after registration confirmation.")
-                    except Exception as e:
-                        print(f"[AIAdapter] Failed to refresh face cache: {e}")
-                
-                reply = reg_turn.speak_text
-                self.stm.add_message(text, reply)
-                avatar_state, motion_command = self._map_avatar_state(reply)
-                return {
-                    "text": reply,
-                    "avatar_state": avatar_state,
-                    "motion_command": motion_command
-                }
+            # If registration controller handles it, we refresh cache on confirmation,
+            # but we let the LLM generate the actual response naturally!
+            if reg_turn.confirmed:
+                try:
+                    self.face_recognizer.refresh_cache(self.db.qdrant, self.db.mongo)
+                    print(f"[AIAdapter] Refreshed face recognizer cache after registration confirmation.")
+                except Exception as e:
+                    print(f"[AIAdapter] Failed to refresh face cache: {e}")
 
-            # Inject registration prefix
+            # Inject registration prefix with natural LLM guidance
             speech_prefix = registration_hint_for_llm(reg_turn) + "\n"
+            if reg_turn.missing:
+                speech_prefix += f"[System Guide: We are registering a user. Staged name: '{reg_turn.display_name}'. Missing fields to ask for naturally: {reg_turn.missing}. Ask for them in your own friendly conversational words.]\n"
+            elif reg_turn.confirmed:
+                speech_prefix += f"[System Guide: The registration for user '{reg_turn.display_name}' was just successfully saved! Welcome them and ask how you can help.]\n"
+            
             processed_text = speech_prefix + text
             
             # Fetch LTM prefetch context if user is identified
