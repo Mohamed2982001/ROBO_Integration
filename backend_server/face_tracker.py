@@ -76,15 +76,20 @@ class FaceTracker:
                 min_detection_confidence=self.cfg.min_detection_confidence,
             )
             self.use_mediapipe = True
-            print("[FaceTracker] MediaPipe face detector loaded successfully ✓")
+            print("[FaceTracker] MediaPipe face detector loaded successfully [OK]")
         except Exception as e:
             print(f"[FaceTracker] MediaPipe solutions not available: {e}. Falling back to OpenCV Haar Cascade...")
-            cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+            import os
+            local_cascade = os.path.join(os.path.dirname(__file__), 'haarcascade_frontalface_default.xml')
+            if os.path.exists(local_cascade):
+                cascade_path = local_cascade
+            else:
+                cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
             self._face_cascade = cv2.CascadeClassifier(cascade_path)
             if self._face_cascade.empty():
-                print("[FaceTracker] ERROR: OpenCV Haar Cascade XML could not be loaded!")
+                print(f"[FaceTracker] ERROR: OpenCV Haar Cascade XML could not be loaded from path: {cascade_path}")
             else:
-                print("[FaceTracker] OpenCV Haar Cascade face detector loaded successfully ✓")
+                print(f"[FaceTracker] OpenCV Haar Cascade face detector loaded successfully [OK] (using {cascade_path})")
 
         # Start centered; will sync toward wherever the servos already are
         # if you set these from robot.get_servo_angle() before run().

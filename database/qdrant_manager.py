@@ -26,7 +26,7 @@ class QdrantManager:
             cfg.COLLECTION_VOICE: cfg.VOICE_EMBEDDING_DIM,
         }
         self._init_collections()
-        print(f"[Qdrant] Connected → {cfg.QDRANT_URI}")
+        print(f"[Qdrant] Connected -> {cfg.QDRANT_URI}")
 
     # ── Collection bootstrap ──────────────────────────────────────────────────
     def _init_collections(self):

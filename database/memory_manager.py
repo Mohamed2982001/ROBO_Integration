@@ -47,7 +47,7 @@ class MemoryManager:
             print(f"{Fore.YELLOW}[MemoryManager] User '{name}' already exists (id={user_id}). Updating embedding.{Style.RESET_ALL}")
         else:
             user_id = self.mongo.store_user(user_data)
-            print(f"{Fore.GREEN}[MemoryManager] Registered '{name}' → MongoDB id={user_id}{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}[MemoryManager] Registered '{name}' -> MongoDB id={user_id}{Style.RESET_ALL}")
 
         # Store / update face embedding in Qdrant
         self.qdrant.store_face_embedding(face_embedding, user_id)

@@ -302,7 +302,7 @@ try:
     print(f"[Main] Connecting to robot at {robot_ip}...")
     bot = Robot(host=robot_ip, auto_fetch_limits=True)
     if bot.ping():
-        print(f"[Main] Connected to robot at {robot_ip} ✓")
+        print(f"[Main] Connected to robot at {robot_ip} [OK]")
         try:
             bot.set_speed(160)
             bot.center_all_servos()
@@ -333,7 +333,7 @@ try:
     )
     # We pass None for camera_url since we stream base64 frames
     face_tracker = FaceTracker(bot, camera_url=0, config=face_tracker_config, show_preview=False)
-    print("[Main] MediaPipe FaceTracker initialized successfully ✓")
+    print("[Main] MediaPipe FaceTracker initialized successfully [OK]")
 except Exception as e:
     print(f"[Main] WARNING: Could not load MediaPipe FaceTracker ({e})")
 
@@ -395,7 +395,7 @@ try:
     device = pick_torch_device()
     print(f"[Main] Loading Kokoro on {device} for server-side audio...")
     kokoro_pipeline = KPipeline(lang_code="a", device=device)
-    print("[Main] Kokoro loaded successfully for server-side audio ✓")
+    print("[Main] Kokoro loaded successfully for server-side audio [OK]")
 except Exception as e:
     print(f"[Main] WARNING: Could not load Kokoro for server-side audio: {e}")
 

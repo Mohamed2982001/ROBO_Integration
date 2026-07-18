@@ -19,7 +19,7 @@ class MongoManager:
     def __init__(self):
         self.client = MongoClient(cfg.MONGO_URI)
         self.db = self.client[cfg.MONGO_DB_NAME]
-        print(f"[MongoDB] Connected → {cfg.MONGO_URI} / {cfg.MONGO_DB_NAME}")
+        print(f"[MongoDB] Connected -> {cfg.MONGO_URI} / {cfg.MONGO_DB_NAME}")
 
     # ── internal helpers ──────────────────────────────────────────────────────
     def _col(self, name: str) -> Collection:
