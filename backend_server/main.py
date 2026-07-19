@@ -5,6 +5,7 @@ import time
 import io
 import wave
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 import base64
 import numpy as np
 import cv2
